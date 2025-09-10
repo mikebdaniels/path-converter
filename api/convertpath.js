@@ -3,44 +3,37 @@ export default async function handler(req, res) {
     let inputPath = "";
 
     if (req.method === "POST") {
-      // Parse x-www-form-urlencoded manually
-      const body = await new Promise((resolve) => {
-        let data = "";
-        req.on("data", chunk => { data += chunk; });
-        req.on("end", () => resolve(data));
+      let body = "";
+      req.on("data", chunk => body += chunk);
+      req.on("end", () => {
+        const params = new URLSearchParams(body);
+        inputPath = params.get("text") || "";
+
+        if (!inputPath.trim()) {
+          return res.status(200).json({
+            response_type: "ephemeral",
+            text: "⚠️ No path provided. Usage: `/convert [filepath]`"
+          });
+        }
+
+        let winPath = inputPath;
+        if (inputPath.startsWith("/Volumes/")) winPath = inputPath.replace(/^\/Volumes\//, "//gus/");
+        winPath = winPath.replace(/\//g, "\\");
+
+        res.setHeader("Content-Type", "application/json");
+        return res.status(200).json({
+          response_type: "ephemeral",
+          text: `➡️ ${winPath}`
+        });
       });
-
-      const params = new URLSearchParams(body);
-      inputPath = params.get("text") || "";
-    } else if (req.method === "GET") {
-      inputPath = req.query.text || "";
+    } else {
+      return res.status(200).json({ text: "Use POST with Slack slash command" });
     }
-
-    // Handle empty input
-    if (!inputPath.trim()) {
-      return res.status(200).json({
-        response_type: "ephemeral",
-        text: "⚠️ No path provided. Usage: `/convert [filepath]`"
-      });
-    }
-
-    // Conversion logic
-    let winPath = inputPath;
-    if (inputPath.startsWith("/Volumes/")) {
-      winPath = inputPath.replace(/^\/Volumes\//, "//gus/");
-    }
-    winPath = winPath.replace(/\//g, "\\");
-
+  } catch (err) {
+    console.error(err);
     return res.status(200).json({
       response_type: "ephemeral",
-      text: `➡️ ${winPath}`
-    });
-
-  } catch (error) {
-    console.error("Error in /convert:", error);
-    return res.status(200).json({
-      response_type: "ephemeral",
-      text: "❌ Something went wrong while converting the path."
+      text: "❌ Error converting path"
     });
   }
 }
