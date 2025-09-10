@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "api/convertpath.js", "use": "@vercel/node" }
+  ],
+  "routes": [
+    { "src": "/api/convertpath", "dest": "/api/convertpath.js" }
+  ]
+}
