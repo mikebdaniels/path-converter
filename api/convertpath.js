@@ -18,7 +18,7 @@ export default function handler(req, res) {
 
   // (Optional) If you also want to flip forward slashes into backslashes
   // you could uncomment this:
-  winPath = winPath.replace(/\//g, "\\");
+  winPath = winPath.replace(/\//g, "\");
 
   res.status(200).json({
     response_type: "ephemeral", // private reply
