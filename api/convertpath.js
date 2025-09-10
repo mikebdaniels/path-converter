@@ -3,37 +3,40 @@ export default async function handler(req, res) {
     let inputPath = "";
 
     if (req.method === "POST") {
-      let body = "";
-      req.on("data", chunk => body += chunk);
-      req.on("end", () => {
-        const params = new URLSearchParams(body);
-        inputPath = params.get("text") || "";
-
-        if (!inputPath.trim()) {
-          return res.status(200).json({
-            response_type: "ephemeral",
-            text: "⚠️ No path provided. Usage: `/convert [filepath]`"
-          });
-        }
-
-        let winPath = inputPath;
-        if (inputPath.startsWith("/Volumes/")) winPath = inputPath.replace(/^\/Volumes\//, "//gus/");
-        winPath = winPath.replace(/\//g, "\\");
-
-        res.setHeader("Content-Type", "application/json");
-        return res.status(200).json({
-          response_type: "ephemeral",
-          text: `➡️ ${winPath}`
-        });
-      });
-    } else {
-      return res.status(200).json({ text: "Use POST with Slack slash command" });
+      // Vercel-friendly way to get the raw body
+      const bodyText = await req.text();
+      const params = new URLSearchParams(bodyText);
+      inputPath = params.get("text") || "";
+    } else if (req.method === "GET") {
+      inputPath = req.query.text || "";
     }
-  } catch (err) {
-    console.error(err);
+
+    if (!inputPath.trim()) {
+      return res.status(200).json({
+        response_type: "ephemeral",
+        text: "⚠️ No path provided. Usage: `/convertpath [filepath]`"
+      });
+    }
+
+    let winPath = inputPath;
+
+    if (inputPath.startsWith("/Volumes/")) {
+      winPath = inputPath.replace(/^\/Volumes\//, "//gus/");
+    }
+
+    winPath = winPath.replace(/\//g, "\\");
+
+    res.setHeader("Content-Type", "application/json");
     return res.status(200).json({
       response_type: "ephemeral",
-      text: "❌ Error converting path"
+      text: `➡️ ${winPath}`
+    });
+
+  } catch (err) {
+    console.error("Error in /convertpath:", err);
+    return res.status(200).json({
+      response_type: "ephemeral",
+      text: "❌ Something went wrong while converting the path."
     });
   }
 }
